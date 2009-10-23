@@ -1,0 +1,39 @@
+VERSION = 0.1
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+bindir = @bindir@
+includedir = @includedir@
+
+VPATH = @srcdir@
+
+CC = @CC@
+CPPFLAGS = -I. @CPPFLAGS@
+CFLAGS = @CFLAGS@
+LDFLAGS = @LDFLAGS@
+RANLIB = @RANLIB@
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+
+all: Makefile liblzfx.a
+
+clean:
+	-rm -f *.o *.a
+
+lzfx.o: lzfx.c lzfx.h
+
+liblzfx.a: lzfx.o
+	rm -f $@
+	$(AR) rc $@ $^
+	$(RANLIB) $@
+
+install: all
+	$(INSTALL) -d $(includedir)
+	$(INSTALL_DATA) lzfx.h $(includedir)
+	$(INSTALL) -d $(libdir)
+	$(INSTALL_DATA) liblzfx.a $(libdir)
+
+Makefile: Makefile.in
+	./config.status
+
