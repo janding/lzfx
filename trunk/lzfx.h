@@ -75,6 +75,8 @@ int lzfx_compress(const void* ibuf, unsigned int ilen,
 int lzfx_decompress(const void* ibuf, unsigned int ilen,
                           void* obuf, unsigned int *olen);
 
+int lzfx_guess(const void* ibuf, unsigned int ilen, unsigned int *olen);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
