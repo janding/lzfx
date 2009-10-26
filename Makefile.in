@@ -16,10 +16,10 @@ RANLIB = @RANLIB@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 
-all: Makefile liblzfx.a
+all: Makefile liblzfx.a test
 
 clean:
-	-rm -f *.o *.a
+	-rm -f *.o *.a test
 
 lzfx.o: lzfx.c lzfx.h
 
@@ -27,6 +27,14 @@ liblzfx.a: lzfx.o
 	rm -f $@
 	$(AR) rc $@ $^
 	$(RANLIB) $@
+
+test: test.c lzfx.c
+	$(CC) $(CFLAGS) test.c lzfx.c -llzf -o test
+
+check: test
+	tar xzf testfiles.tar.gz
+	./test testfiles/*.test
+	-rm -rf testfiles
 
 install: all
 	$(INSTALL) -d $(includedir)
