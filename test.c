@@ -55,10 +55,6 @@ int lzf_proxy_decomp(const void* ibuf, unsigned int ilen,
 
 /*  Test for buffer overrun.
 
-    Allocates a buffer of the max required size (ilen plus 5%), plus a
-    guard length.  The stated buffer length is gradually reduced.  Check to
-    make sure that no bytes outside the stated length are ever modified.
-
     Returns:    0   No failure
                 1   Failure
 */
@@ -71,23 +67,21 @@ int test_bounds(const void* ibuf, unsigned int ilen,
     u8* compressed_buffer;
     u8* plaintext_buffer;
 
-    unsigned int stated_length;
     unsigned int compressed_length;
     unsigned int plaintext_length;
-
     unsigned int size_after_compression;
 
     int rc;
     int frc = 0;
 
-    real_length = (int)(ilen*1.05) + GUARD_BYTES;    
+    real_length = ((int)(ilen*1.05) == ilen ? ilen+20 : (int)ilen*1.05) + GUARD_BYTES;    
     comparison_buffer = (u8*)malloc(real_length);
     compressed_buffer = (u8*)malloc(real_length);
     plaintext_buffer = (u8*)malloc(real_length);
 
     memset(comparison_buffer, MAGIC_VAL, real_length);
 
-    size_after_compression = real_length;
+    size_after_compression = real_length-GUARD_BYTES;
 
     /* Determine the actual size of the output data */
     rc = compressor(ibuf, ilen, compressed_buffer, &size_after_compression);
@@ -97,53 +91,44 @@ int test_bounds(const void* ibuf, unsigned int ilen,
         goto out;
     }
 
-    for(    stated_length = size_after_compression + 3;
-            stated_length >= size_after_compression - 2;
-            stated_length--){
+    memset(compressed_buffer, MAGIC_VAL, real_length);
+    memset(plaintext_buffer, MAGIC_VAL, real_length);
 
-        memset(compressed_buffer, MAGIC_VAL, real_length);
-        memset(plaintext_buffer, MAGIC_VAL, real_length);
+    compressed_length = size_after_compression + GUARD_BYTES;
 
-        compressed_length = stated_length;
+    rc = compressor(ibuf, ilen, compressed_buffer, &compressed_length);
 
-        rc = compressor(ibuf, ilen, compressed_buffer, &compressed_length);
+    if(memcmp(comparison_buffer, compressed_buffer+size_after_compression, GUARD_BYTES)){
+        fprintf(stderr, "Overrun in compressed bytes");
+        frc = 1;
+        goto out;
+    }
 
-        /* Check for corruption in guard byte section */
-        if(memcmp(comparison_buffer, compressed_buffer+stated_length, GUARD_BYTES)){
-            fprintf(stderr, "Overrun in trailing bytes (length %d)\n", (int)stated_length);
-            frc = 1;
-            break;
-        }
+    if(rc<0){
+        fprintf(stderr, "Failed second compression (code %d)\n", rc);
+        frc = 1;
+        goto out;
+    }
 
-        if(rc<0){
-            if(rc != LZFX_ESIZE){
-                fprintf(stderr, "Incorrect return code (length %d)\n", (int)stated_length);
-                frc = 1;
-            }
-            break;
-        }
+    plaintext_length = ilen;
 
-        plaintext_length = ilen;
+    rc = decompressor(compressed_buffer, compressed_length,
+                         plaintext_buffer, &plaintext_length);
 
-        rc = decompressor(compressed_buffer, compressed_length,
-                             plaintext_buffer, &plaintext_length);
+    if(rc<0){
+        fprintf(stderr, "Failed decompression (code %d)\n", rc);
+        frc = 1;
+        goto out;
+    }
 
-        if(rc<0){
-            fprintf(stderr, "Failed decompression (length %d, code %d)\n", (int)stated_length, rc);
-            frc = 1;
-            break;
-        }
+    if(memcmp(comparison_buffer, plaintext_buffer+plaintext_length, GUARD_BYTES)){
+        fprintf(stderr, "Overrun in decompressed bytes\n");
+        frc = 1;
+    }
 
-        if(memcmp(comparison_buffer, plaintext_buffer+plaintext_length, GUARD_BYTES)){
-            fprintf(stderr, "Overrun in decompressed bytes (length %d)\n", (int)stated_length);
-            frc = 1;
-        }
-
-        if(memcmp(ibuf, plaintext_buffer, ilen)){
-            fprintf(stderr, "Decompressed plaintext does not match (length %d)\n", (int)stated_length);
-            frc = 1;
-        }
-
+    if(memcmp(ibuf, plaintext_buffer, ilen)){
+        fprintf(stderr, "Decompressed plaintext does not match\n");
+        frc = 1;
     }
 
     out:
@@ -283,9 +268,7 @@ int main(int argc, char* argv[]){
 
         close(fd);
 
-        if(perform_tests(ibuf, ilen)!=0){
-            frc=2;
-        }
+        frc = perform_tests(ibuf, ilen) ? 2 : frc;
     }
 
     return frc;
