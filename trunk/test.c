@@ -167,7 +167,7 @@ int test_round(const void* ibuf, unsigned int ilen,
     int rc;
     int frc=0;
 
-    compressed_length = (int)(ilen*1.05);
+    compressed_length = (int)(ilen*1.05) + 16;
     compressed_buffer = (u8*)malloc(compressed_length);
 
     plaintext_length = ilen;
@@ -226,9 +226,11 @@ int perform_tests(const void* ibuf, unsigned int ilen){
 
 /*  Run compression tests on input data chunk
 
-    <imagename> <filename>
+    <imagename> file1 file2 ... filen
 
-    Return code (if positive) is # of failed tests.
+    Return code: 0  All passed
+                 1  I/O error
+                 2  Test failure
 */
 int main(int argc, char* argv[]){
 
@@ -240,36 +242,53 @@ int main(int argc, char* argv[]){
     ssize_t amt_read = 0;
     int nblocks = 0;
 
-    if(argc!=2){
-        fprintf(stderr, "Syntax is \"test <filename>\"\n");
-        return -1;
+    int argidx;
+    int frc = 0;
+
+    if(argc<2){
+        fprintf(stderr, "Syntax is \"test file1 file2 ... fileN\"\n");
+        return 1;
     }
 
-    if((fd = open(argv[1], O_RDONLY)) < 0){
-        fprintf(stderr, "Can't open input file.\n");
-        return -2;
+    for(argidx=1; argidx<argc; argidx++){
+
+        amt_read = 0;
+        free(ibuf);
+        ibuf = NULL;
+        ilen = 0;
+        nblocks = 0;
+        rc = 0;
+
+        if((fd = open(argv[argidx], O_RDONLY)) < 0){
+            fprintf(stderr, "Can't open input file \"%s\".\n", argv[argidx]);
+            return 1;
+        }
+    
+        fprintf(stderr, "\nTesting file \"%s\"\n", argv[argidx]);
+
+        do {
+            if((ilen-amt_read) < BLOCKSIZE){
+                ibuf = realloc(ibuf, ilen+BLOCKSIZE);
+                ilen += BLOCKSIZE;
+            }
+            rc = read(fd, ibuf, BLOCKSIZE);
+            if(rc<0){
+                fprintf(stderr, "Read error\n");
+                return -3;
+            }
+            amt_read += rc;
+        } while(rc > 0);
+        
+        ilen = amt_read;
+
+        close(fd);
+
+        if(perform_tests(ibuf, ilen)!=0){
+            frc=2;
+        }
     }
-    
-    do {
-        if((ilen-amt_read) < BLOCKSIZE){
-            ibuf = realloc(ibuf, ilen+BLOCKSIZE);
-            ilen += BLOCKSIZE;
-        }
-        rc = read(fd, ibuf, BLOCKSIZE);
-        if(rc<0){
-            fprintf(stderr, "Read error\n");
-            return -3;
-        }
-        amt_read += rc;
-    } while(rc > 0);
-    
 
-    ilen = amt_read;
-
-    close(fd);
-
-    return perform_tests(ibuf, ilen);
-
+    return frc;
 }
 
 
