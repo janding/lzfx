@@ -185,26 +185,31 @@ int test_round(const void* ibuf, unsigned int ilen,
     
     Return is # of failed tests.
 */
-int perform_tests(const void* ibuf, unsigned int ilen){
+int perform_tests(const void* ibuf, unsigned int ilen, const char* fname){
 
     int nfailed = 0;
+    int rc = 0;
 
-    fprintf(stdout, "Test LZF round trip...\n");
-    nfailed += test_round(ibuf, ilen, lzf_proxy_comp, lzf_proxy_decomp);
-    fprintf(stdout, "Test LZFX round trip...\n");
-    nfailed += test_round(ibuf, ilen, lzfx_compress, lzfx_decompress);
+#define DO_TEST(exp, msg) \
+  { rc = (exp);     \
+    if(rc){         \
+        nfailed++;  \
+        fprintf(stderr, "\nFail: %s (file %s)\n", (msg), fname); \
+    } else { \
+        fprintf(stdout, "."); \
+    } \
+    rc = 0; }
 
-    fprintf(stdout, "Test LZFX comp -> LZF decomp...\n");
-    nfailed += test_round(ibuf, ilen, lzfx_compress, lzf_proxy_decomp);
-    fprintf(stdout, "Test LZF comp -> LZFX decomp...\n");
-    nfailed += test_round(ibuf, ilen, lzf_proxy_comp, lzfx_decompress);
+    DO_TEST(test_round(ibuf, ilen, lzf_proxy_comp, lzf_proxy_decomp), "LZF round trip");
+    DO_TEST(test_round(ibuf, ilen, lzfx_compress, lzfx_decompress),   "LZFX round trip");
 
-    fprintf(stdout, "Test for LZFX overruns...\n");
-    nfailed += test_bounds(ibuf, ilen, lzfx_compress, lzfx_decompress);
-    fprintf(stdout, "Test for LZF overruns...\n");
-    nfailed += test_bounds(ibuf, ilen, lzf_proxy_comp, lzf_proxy_decomp);
+    DO_TEST(test_round(ibuf, ilen, lzfx_compress, lzf_proxy_decomp), "LZFX comp -> LZF decomp");
+    DO_TEST(test_round(ibuf, ilen, lzf_proxy_comp, lzfx_decompress), "LZF comp -> LZFX decomp");
+ 
+    DO_TEST(test_bounds(ibuf, ilen, lzfx_compress, lzfx_decompress),   "LZFX overrun check");
+    DO_TEST(test_bounds(ibuf, ilen, lzf_proxy_comp, lzf_proxy_decomp), "LZF overrun check");
 
-    fprintf(stdout, "%d tests failed\n", nfailed);
+    fprintf(stdout, "\n");
 
     return nfailed;
 }
@@ -228,11 +233,11 @@ int main(int argc, char* argv[]){
     int nblocks = 0;
 
     int argidx;
-    int frc = 0;
+    int nfailed = 0;
 
     if(argc<2){
         fprintf(stderr, "Syntax is \"test file1 file2 ... fileN\"\n");
-        return 1;
+        return 2;
     }
 
     for(argidx=1; argidx<argc; argidx++){
@@ -246,11 +251,8 @@ int main(int argc, char* argv[]){
 
         if((fd = open(argv[argidx], O_RDONLY)) < 0){
             fprintf(stderr, "Can't open input file \"%s\".\n", argv[argidx]);
-            return 1;
+            return 2;
         }
-    
-        fprintf(stderr, "\nTesting file \"%s\"\n", argv[argidx]);
-
         do {
             if((ilen-amt_read) < BLOCKSIZE){
                 ibuf = realloc(ibuf, ilen+BLOCKSIZE);
@@ -259,7 +261,7 @@ int main(int argc, char* argv[]){
             rc = read(fd, ibuf, BLOCKSIZE);
             if(rc<0){
                 fprintf(stderr, "Read error\n");
-                return -3;
+                return 2;
             }
             amt_read += rc;
         } while(rc > 0);
@@ -268,10 +270,16 @@ int main(int argc, char* argv[]){
 
         close(fd);
 
-        frc = perform_tests(ibuf, ilen) ? 2 : frc;
+        nfailed += perform_tests(ibuf, ilen, argv[argidx]);
     }
 
-    return frc;
+    if(nfailed){
+        fprintf(stdout, "%d test%s failed\n", nfailed, nfailed > 1 ? "s" : "");
+    } else {
+        fprintf(stdout, "All tests passed\n");
+    }
+
+    return !!nfailed;
 }
 
 

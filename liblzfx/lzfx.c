@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2009 Andrew Collette <andrew.collette at gmail.com>
+ * http://lzfx.googlecode.com
  *
  * Implements an LZF-compatible compressor/decompressor based on the liblzf
  * codebase written by Marc Lehmann.  This code is released under the BSD
@@ -41,7 +42,7 @@
 # include <string.h>
 #endif
 
-#if __GNUC__ >= 3
+#if __GNUC__ >= 3 && !DISABLE_EXPECT
 # define fx_expect_false(expr)  __builtin_expect((expr) != 0, 0)
 # define fx_expect_true(expr)   __builtin_expect((expr) != 0, 1)
 #else
@@ -62,6 +63,8 @@ typedef const u8 *LZSTATE[LZFX_HSIZE];
 #define LZFX_MAX_OFF        (1 << 13)
 #define LZFX_MAX_REF        ((1 << 8) + (1 << 3))
 
+static
+int lzfx_getsize(const void* ibuf, unsigned int ilen, unsigned int *olen);
 
 /* Compressed format
 
@@ -81,9 +84,9 @@ typedef const u8 *LZSTATE[LZFX_HSIZE];
     LLLooooo oooooooo           for backrefs of real length < 9   (1 <= L < 7)
     111ooooo LLLLLLLL oooooooo  for backrefs of real length >= 9  (L > 7)  
 */
-
-int lzfx_compress(const void* ibuf, unsigned int ilen,
-                        void* obuf, unsigned int *olen){
+#include <stdio.h>
+int lzfx_compress(const void *const ibuf, const unsigned int ilen,
+                              void *obuf, unsigned int *const olen){
 
     /* Hash table; an array of u8*'s which point
        to various locations in the input buffer */
@@ -94,12 +97,12 @@ int lzfx_compress(const void* ibuf, unsigned int ilen,
     const u8 *ref;          /* Pointer to candidate match location in input */
 
     const u8 *ip = (const u8 *)ibuf;
-    const u8 *in_end = ip + ilen;
+    const u8 *const in_end = ip + ilen;
 
     u8 *op = (u8 *)obuf;
     const u8 *const out_end = (olen == NULL ? NULL : op + *olen);
 
-    int lit;    /* Counts the number of bytes in the current literal run */
+    int lit;    /* # of bytes in current literal run */
 
 #if defined (WIN32) && defined (_M_X64)
     unsigned _int64 off; /* workaround for missing POSIX compliance */
@@ -107,11 +110,15 @@ int lzfx_compress(const void* ibuf, unsigned int ilen,
     unsigned long off;
 #endif
 
-    if(ibuf == NULL || obuf == NULL || olen == NULL) return LZFX_EARGS;
-    
-    if(ilen==0){
+    if(olen == NULL) return LZFX_EARGS;
+    if(ibuf == NULL){
+        if(ilen != 0) return LZFX_EARGS;
         *olen = 0;
         return 0;
+    }
+    if(obuf == NULL){
+        if(olen != 0) return LZFX_EARGS;
+        return lzfx_getsize(ibuf, ilen, olen);
     }
 
     memset(htab, 0, sizeof(htab));
@@ -120,14 +127,14 @@ int lzfx_compress(const void* ibuf, unsigned int ilen,
         advanced because the current byte will hold the encoded length. */
     lit = 0; op++;
 
-    hval = LZFX_FRST(ip);   /* Load the first two bytes of input into hval */
+    hval = LZFX_FRST(ip);
 
     while(ip + 2 < in_end){   /* The NEXT macro reads 2 bytes ahead */
 
         hval = LZFX_NEXT(hval, ip);
         hslot = htab + LZFX_IDX(hval);
 
-        ref = *hslot; *hslot = ip;    /* Possible match. */
+        ref = *hslot; *hslot = ip;
 
         if( ref < ip
         &&  (off = ip - ref - 1) < LZFX_MAX_OFF
@@ -138,8 +145,8 @@ int lzfx_compress(const void* ibuf, unsigned int ilen,
         &&  ref[2] == ip[2] ) {
 
             unsigned int len = 3;   /* We already know 3 bytes match */
-            const unsigned int ixlen = in_end - ip -2;
-            const unsigned int maxlen = ixlen > LZFX_MAX_REF ? LZFX_MAX_REF : ixlen;
+            const unsigned int maxlen = in_end - ip - 2 > LZFX_MAX_REF ?
+                                        LZFX_MAX_REF : in_end - ip - 2;
 
             /* lit == 0:  op + 3 must be < out_end (because we undo the run)
                lit != 0:  op + 3 + 1 must be < out_end */
@@ -162,24 +169,25 @@ int lzfx_compress(const void* ibuf, unsigned int ilen,
 
             /* Format 2: [111ooooo LLLLLLLL oooooooo] */
             } else {
-              *op++ = (off >> 8) + (  7 << 5);
+              *op++ = (off >> 8) + (7 << 5);
               *op++ = len - 7;
               *op++ = off;
             }
 
-            lit = 0; op++; /* start literal run */
+            lit = 0; op++;
 
-            ip += len + 2;
+            ip += len + 1;  /* ip = initial ip + #octets -1 */
 
-            if (fx_expect_false (ip >= in_end - 2)) break;
-
-            --ip;  /* overlap 1 byte with the previous data */
+            if (fx_expect_false (ip + 3 >= in_end)){
+                ip++;   /* Code following expects exit at bottom of loop */
+                break;
+            }
 
             hval = LZFX_FRST (ip);
             hval = LZFX_NEXT (hval, ip);
             htab[LZFX_IDX (hval)] = ip;
 
-            ip++;
+            ip++;   /* ip = initial ip + #octets */
 
         } else {
               /* Keep copying literal bytes */
@@ -197,22 +205,22 @@ int lzfx_compress(const void* ibuf, unsigned int ilen,
 
     } /* while(ip < ilen -2) */
 
-    /* at most 3 bytes can be missing here */
+    /*  At most 3 bytes remain in input.  We therefore need 4 bytes available
+        in the output buffer to store them (3 data + ctrl byte).*/
     if (op + 3 > out_end) return LZFX_ESIZE;
 
-    while (ip < in_end)
-    {
-      lit++; *op++ = *ip++;
+    while (ip < in_end) {
 
-      if (fx_expect_false (lit == LZFX_MAX_LIT))
-        {
-          op [- lit - 1] = lit - 1; /* stop run */
-          lit = 0; op++; /* start run */
+        lit++; *op++ = *ip++;
+
+        if (fx_expect_false (lit == LZFX_MAX_LIT)){
+            op [- lit - 1] = lit - 1;
+            lit = 0; op++;
         }
     }
 
-    op [- lit - 1] = lit - 1; /* end run */
-    op -= !lit; /* undo run if length is zero */
+    op [- lit - 1] = lit - 1;
+    op -= !lit;
 
     *olen = op - (u8 *)obuf;
     return 0;
@@ -226,12 +234,19 @@ int lzfx_decompress(const void* ibuf, unsigned int ilen,
     u8 const *const in_end = ip + ilen;
     u8 *op = (u8 *)obuf;
     u8 const *const out_end = (olen == NULL ? NULL : op + *olen);
-
-    if(ibuf == NULL || obuf == NULL || olen == NULL) return LZFX_EARGS;
     
-    if(ilen == 0){
+    unsigned int remain_len = 0;
+    int rc;
+
+    if(olen == NULL) return LZFX_EARGS;
+    if(ibuf == NULL){
+        if(ilen != 0) return LZFX_EARGS;
         *olen = 0;
         return 0;
+    }
+    if(obuf == NULL){
+        if(olen != 0) return LZFX_EARGS;
+        return lzfx_getsize(ibuf, ilen, olen);
     }
 
     do {
@@ -242,8 +257,11 @@ int lzfx_decompress(const void* ibuf, unsigned int ilen,
 
             ctrl++;
 
-            if(op + ctrl > out_end) return LZFX_ESIZE;
-            if(ip + ctrl > in_end) return LZFX_ECORRUPT;
+            if(fx_expect_false(op + ctrl > out_end)){
+                --ip;       /* Rewind to control byte */
+                goto guess;
+            }
+            if(fx_expect_false(ip + ctrl > in_end)) return LZFX_ECORRUPT;
 
             do
                 *op++ = *ip++;
@@ -265,18 +283,19 @@ int lzfx_decompress(const void* ibuf, unsigned int ilen,
             unsigned int len = (ctrl >> 5);
             u8 *ref = op - ((ctrl & 0x1f) << 8) -1;
 
-            if(len==7){     /* i.e. format #2 */
-                len += *ip++;
-            }
+            if(len==7) len += *ip++;    /* i.e. format #2 */
 
             len += 2;    /* len is now #octets */
 
-            if(ip >= in_end) return LZFX_ECORRUPT;
+            if(fx_expect_false(op + len > out_end)){
+                ip -= (len >= 9) ? 2 : 1;   /* Rewind to control byte */
+                goto guess;
+            }
+            if(fx_expect_false(ip >= in_end)) return LZFX_ECORRUPT;
 
             ref -= *ip++;
 
-            if(op + len > out_end) return LZFX_ESIZE;
-            if(ref < (u8*)obuf) return LZFX_ECORRUPT;
+            if(fx_expect_false(ref < (u8*)obuf)) return LZFX_ECORRUPT;
 
             do
                 *op++ = *ref++;
@@ -288,16 +307,20 @@ int lzfx_decompress(const void* ibuf, unsigned int ilen,
     *olen = op - (u8 *)obuf;
 
     return 0;
+
+guess:
+    rc = lzfx_getsize(ip, ilen - (ip-(u8*)ibuf), &remain_len);
+    if(rc>=0) *olen = remain_len + (op - (u8*)obuf);
+    return rc;
 }
 
-/* Guess len */
-int lzfx_guess(const void* ibuf, unsigned int ilen, unsigned int *olen){
+/* Guess len. No parameters may be NULL; this is not checked. */
+static
+int lzfx_getsize(const void* ibuf, unsigned int ilen, unsigned int *olen){
 
     u8 const *ip = (const u8 *)ibuf;
     u8 const *const in_end = ip + ilen;
     int tot_len = 0;
-
-    if(ibuf == NULL) return LZFX_EARGS;
     
     while (ip < in_end) {
 
