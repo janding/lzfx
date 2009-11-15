@@ -10,16 +10,16 @@ VPATH = @srcdir@
 
 CC = @CC@
 CPPFLAGS = -I. @CPPFLAGS@
-CFLAGS = -I./liblzfx @CFLAGS@
+CFLAGS = -I. @CFLAGS@
 LDFLAGS = @LDFLAGS@
 RANLIB = @RANLIB@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 
 DISTNAME = lzfx-$(VERSION)
-DISTFILES = README LICENSE liblzfx/lzfx.c liblzfx/lzfx.h test.c \
+DISTFILES = README LICENSE lzfx.c lzfx.h tests/* lzfx-util.c \
             configure Makefile.in install-sh
-UTILDIR = utility
+
 TESTDIR = tests
 TESTFILES = $(TESTDIR)/empty.test \
             $(TESTDIR)/random.test
@@ -27,10 +27,10 @@ TESTFILES = $(TESTDIR)/empty.test \
 all: Makefile liblzfx.a test util
 
 clean:
-	-rm -f *.o *.a
+	-rm -f *.o *.a lzfx tests/test
 
-lzfx.o: liblzfx/lzfx.c liblzfx/lzfx.h
-	$(CC) $(CFLAGS) liblzfx/lzfx.c -c
+lzfx.o: lzfx.c lzfx.h
+	$(CC) $(CFLAGS) lzfx.c -c
 
 liblzfx.a: lzfx.o
 	rm -f $@
@@ -38,7 +38,7 @@ liblzfx.a: lzfx.o
 	$(RANLIB) $@
 
 test: tests/test.c
-	$(CC) $(CFLAGS) $(TESTDIR)/test.c liblzfx/lzfx.c -llzf -o $(TESTDIR)/test
+	$(CC) $(CFLAGS) $(TESTDIR)/test.c lzfx.c -llzf -o $(TESTDIR)/test
 
 check: test
 	dd if=/dev/zero of=$(TESTDIR)/empty.test bs=1M count=4 > /dev/null 2>&1
@@ -48,12 +48,14 @@ check: test
 
 install: all
 	$(INSTALL) -d $(includedir)
-	$(INSTALL_DATA) liblzfx/lzfx.h $(includedir)
+	$(INSTALL_DATA) lzfx.h $(includedir)
 	$(INSTALL) -d $(libdir)
 	$(INSTALL_DATA) liblzfx.a $(libdir)
+	$(INSTALL) -d $(bindir)
+	$(INSTALL) -m 755 lzfx $(bindir)
 
-util: liblzfx/lzfx.c
-	$(CC) $(CFLAGS) $(UTILDIR)/util.c liblzfx/lzfx.c -o lzfx
+util: lzfx-util.c lzfx.c
+	$(CC) $(CFLAGS) lzfx-util.c lzfx.c -o lzfx
 
 dist:
 	mkdir $(DISTNAME)
