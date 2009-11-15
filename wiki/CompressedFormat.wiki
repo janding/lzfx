@@ -1,0 +1,27 @@
+#summary Binary format of LZFX streams and files
+
+== Buffer compression format ==
+
+From lzfx.c:
+
+{{{
+    There are two kinds of structures in LZF/LZFX: literal runs and back
+    references. The length of a literal run is encoded as L - 1, as it must
+    contain at least one byte.  Literals are encoded as follows:
+
+    000LLLLL <L+1 bytes>
+
+    Back references are encoded as follows.  The smallest possible encoded
+    length value is 1, as otherwise the control byte would be recognized as
+    a literal run.  Since at least three bytes must match for a back reference
+    to be inserted, the length is encoded as L - 2 instead of L - 1.  The
+    offset (distance to the desired data in the output buffer) is encoded as
+    o - 1, as all offsets are at least 1.  The binary format is:
+
+    LLLooooo oooooooo           for backrefs of real length < 9   (1 <= L < 7)
+    111ooooo LLLLLLLL oooooooo  for backrefs of real length >= 9  (L > 7)  
+}}}
+
+== LZFX utility file format ==
+
+(Still under development)
