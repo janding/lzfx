@@ -1,4 +1,5 @@
 #summary Overview of LZFX
+#labels Featured
 
 Downloads, bug tracker, documentation are at Google Code:
 http://lzfx.googlecode.com
@@ -51,7 +52,5 @@ utility is different than that used by the "lzf" utility.
   * The lzfx utility is not full-featured yet
   * You will need LZF installed to run "make check" as part of the test suite checks for cross-compatibility
   * A benchmark program is not yet available
-
-
 
 
