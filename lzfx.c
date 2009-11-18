@@ -42,7 +42,7 @@
 # include <string.h>
 #endif
 
-#if __GNUC__ >= 3 && !DISABLE_EXPECT
+#if __GNUC__ >= 3
 # define fx_expect_false(expr)  __builtin_expect((expr) != 0, 0)
 # define fx_expect_true(expr)   __builtin_expect((expr) != 0, 1)
 #else
