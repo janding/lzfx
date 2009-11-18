@@ -84,7 +84,6 @@ int lzfx_getsize(const void* ibuf, unsigned int ilen, unsigned int *olen);
     LLLooooo oooooooo           for backrefs of real length < 9   (1 <= L < 7)
     111ooooo LLLLLLLL oooooooo  for backrefs of real length >= 9  (L > 7)  
 */
-#include <stdio.h>
 int lzfx_compress(const void *const ibuf, const unsigned int ilen,
                               void *obuf, unsigned int *const olen){
 
@@ -116,10 +115,7 @@ int lzfx_compress(const void *const ibuf, const unsigned int ilen,
         *olen = 0;
         return 0;
     }
-    if(obuf == NULL){
-        if(olen != 0) return LZFX_EARGS;
-        return lzfx_getsize(ibuf, ilen, olen);
-    }
+    if(obuf == NULL) return LZFX_EARGS;
 
     memset(htab, 0, sizeof(htab));
 
