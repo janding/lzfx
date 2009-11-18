@@ -17,14 +17,14 @@ INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 
 DISTNAME = lzfx-$(VERSION)
-DISTFILES = README LICENSE lzfx.c lzfx.h tests/* lzfx-util.c \
+DISTFILES = README LICENSE lzfx.c lzfx.h tests/*.test tests/test.c lzfx-util.c \
             configure Makefile.in install-sh
 
 TESTDIR = tests
 TESTFILES = $(TESTDIR)/empty.test \
             $(TESTDIR)/random.test
 
-all: Makefile liblzfx.a test util
+all: Makefile liblzfx.a util
 
 clean:
 	-rm -f *.o *.a lzfx tests/test
