@@ -413,6 +413,10 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
+#ifdef __MINGW32__
+	_fmode = _O_BINARY;
+#endif
+
     ifd = open(argv[1], O_RDONLY);
     if(ifd<0){
         fprintf(stderr, "Can't open input file\n");
