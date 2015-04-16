@@ -59,7 +59,7 @@ typedef const u8 *LZSTATE[LZFX_HSIZE];
 #define LZFX_IDX(h)      ((( h >> (3*8 - LZFX_HLOG)) - h  ) & (LZFX_HSIZE - 1))
 
 /* These cannot be changed, as they are related to the compressed format. */
-#define LZFX_MAX_LIT        (1 <<  5)
+#define LZFX_MAX_LIT        (1 <<  5) - 1
 #define LZFX_MAX_OFF        (1 << 13)
 #define LZFX_MAX_REF        ((1 << 8) + (1 << 3))
 
@@ -69,10 +69,9 @@ int lzfx_getsize(const void* ibuf, unsigned int ilen, unsigned int *olen);
 /* Compressed format
 
     There are two kinds of structures in LZF/LZFX: literal runs and back
-    references. The length of a literal run is encoded as L - 1, as it must
-    contain at least one byte.  Literals are encoded as follows:
+    references.  Literals are encoded as follows:
 
-    000LLLLL <L+1 bytes>
+    000LLLLL <L bytes>
 
     Back references are encoded as follows.  The smallest possible encoded
     length value is 1, as otherwise the control byte would be recognized as
@@ -149,7 +148,7 @@ int lzfx_compress(const void *const ibuf, const unsigned int ilen,
             if(fx_expect_false(op - !lit + 3 + 1 >= out_end))
                 return LZFX_ESIZE;
             
-            op [- lit - 1] = lit - 1; /* Terminate literal run */
+            op [- lit - 1] = lit;     /* Terminate literal run */
             op -= !lit;               /* Undo run if length is zero */
 
             /*  Start checking at the fourth byte */
@@ -193,7 +192,7 @@ int lzfx_compress(const void *const ibuf, const unsigned int ilen,
               lit++; *op++ = *ip++;
 
               if (fx_expect_false (lit == LZFX_MAX_LIT)) {
-                  op [- lit - 1] = lit - 1; /* stop run */
+                  op [- lit - 1] = lit; /* stop run */
                   lit = 0; op++; /* start run */
               }
 
@@ -210,12 +209,12 @@ int lzfx_compress(const void *const ibuf, const unsigned int ilen,
         lit++; *op++ = *ip++;
 
         if (fx_expect_false (lit == LZFX_MAX_LIT)){
-            op [- lit - 1] = lit - 1;
+            op [- lit - 1] = lit;
             lit = 0; op++;
         }
     }
 
-    op [- lit - 1] = lit - 1;
+    op [- lit - 1] = lit;
     op -= !lit;
 
     *olen = op - (u8 *)obuf;
@@ -248,10 +247,8 @@ int lzfx_decompress(const void* ibuf, unsigned int ilen,
     do {
         unsigned int ctrl = *ip++;
 
-        /* Format 000LLLLL: a literal byte string follows, of length L+1 */
+        /* Format 000LLLLL: a literal byte string follows, of length L */
         if(ctrl < (1 << 5)) {
-
-            ctrl++;
 
             if(fx_expect_false(op + ctrl > out_end)){
                 --ip;       /* Rewind to control byte */
@@ -323,8 +320,6 @@ int lzfx_getsize(const void* ibuf, unsigned int ilen, unsigned int *olen){
         unsigned int ctrl = *ip++;
 
         if(ctrl < (1 << 5)) {
-
-            ctrl++;
 
             if(ip + ctrl > in_end)
                 return LZFX_ECORRUPT;
