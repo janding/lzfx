@@ -1,0 +1,9 @@
+a.out
+core
+*.core
+in
+out
+log.txt
+*~
+*.bak
+lzfxs-util
