@@ -90,7 +90,7 @@ fx_init(FX_STATE *state, int ifd, int ofd, fx_mode_t mode)
  *  <0: Read error
  */
 
-static inline int
+static int
 fx_read_bytes(const FX_STATE state, void *buf, const size_t len)
 {
   ssize_t  rc     = 0;
@@ -131,7 +131,7 @@ fx_read_bytes(const FX_STATE state, void *buf, const size_t len)
  *  <0:    Write error
  */
 
-static inline int
+static int
 fx_write_bytes(const FX_STATE state, const void *buf, const size_t len)
 {
   ssize_t  rc     = 0;
@@ -188,7 +188,7 @@ fx_skip_bytes(const FX_STATE state, const size_t len)
  * <0:     Read error (message printed)
  */
 
-static inline int
+static int
 fx_read_header(const FX_STATE state, fx_kind_t *kind_in, uint32_t *len_in)
 {
   int       rc;
@@ -234,7 +234,7 @@ fx_read_header(const FX_STATE state, fx_kind_t *kind_in, uint32_t *len_in)
  * <0:     Write error (message printed)
  */
 
-static inline int
+static int
 fx_write_block(const FX_STATE state, const fx_kind_t kind_in,
                const uint32_t len, const void *data)
 {
@@ -330,7 +330,7 @@ fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len)
   return 0;
 }
 
-static inline int
+static int
 mem_resize(u8 **buf, size_t *ilen, const size_t olen)
 {
   void *tbuf;
