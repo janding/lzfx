@@ -69,7 +69,7 @@ int fx_read_bytes(const FX_STATE state, void* buf, const size_t len){
 
     buf:    Input buffer
     len:    # of bytes in buf
-    
+
     >=0:    Bytes written
      <0:    Write error
 */
@@ -158,7 +158,7 @@ int fx_read_header(const FX_STATE state, fx_kind_t *kind_in, uint32_t *len_in){
     <0:     Write error (message printed)
 */
 static inline
-int fx_write_block(const FX_STATE state, const fx_kind_t kind_in, 
+int fx_write_block(const FX_STATE state, const fx_kind_t kind_in,
                    const uint32_t len, const void* data){
 
     const uint16_t kind = kind_in;
@@ -204,7 +204,7 @@ int fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len){
         if(obuf==NULL) return -1;  /* This leaks but we quit right away */
         obuf_len = usize;
     }
-    
+
     usize_real = usize;
 
     rc = lzfx_decompress(ibuf+4, len-4, obuf, &usize_real);
@@ -265,7 +265,7 @@ int fx_compress_block(const FX_STATE state, const u8* ibuf,
     if(rc<0) return -1;
 
     /* 4-byte space to store the usize */
-    compressed_len = ilen - 4; 
+    compressed_len = ilen - 4;
 
     rc = lzfx_compress(ibuf, ilen, obuf+4, &compressed_len);
     if(rc<0 && rc != LZFX_ESIZE){
@@ -277,9 +277,9 @@ int fx_compress_block(const FX_STATE state, const u8* ibuf,
 
         rc = fx_write_block(state, KIND_UNCOMPRESSED, ilen, ibuf);
         if(rc<0) return -1;
-    
+
     } else {
-        
+
         obuf[0] = ilen >> 24;
         obuf[1] = ilen >> 16;
         obuf[2] = ilen >> 8;
@@ -356,7 +356,7 @@ int fx_read(const FX_STATE state){
         if(blocksize==0) continue;
 
         switch(kind){
-        
+
         case KIND_UNCOMPRESSED:
             rc = mem_resize(&ibuf, &ilen, blocksize);
             if(rc<0) return -1;
@@ -407,7 +407,7 @@ int main(int argc, char* argv[]){
                     "  THIS IS A DEVELOPMENT RELEASE\n"
                     "  DO NOT USE ON CRITICAL DATA\n"
                     "*********************************\n");
-    
+
     if(argc!=4){
         fprintf(stderr, "Syntax is lzfx <namein> <nameout> c|d\n");
         return 1;
@@ -451,4 +451,3 @@ int main(int argc, char* argv[]){
 
     return rc ? 1 : 0;
 }
-

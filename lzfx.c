@@ -6,19 +6,19 @@
  * codebase written by Marc Lehmann.  This code is released under the BSD
  * license.  License and original copyright statement follow.
  *
- * 
+ *
  * Copyright (c) 2000-2008 Marc Alexander Lehmann <schmorp@schmorp.de>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modifica-
  * tion, are permitted provided that the following conditions are met:
- * 
+ *
  *   1.  Redistributions of source code must retain the above copyright notice,
  *       this list of conditions and the following disclaimer.
- * 
+ *
  *   2.  Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MER-
  * CHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
@@ -147,7 +147,7 @@ int lzfx_compress(const void *const ibuf, const unsigned int ilen,
                lit != 0:  op + 3 + 1 must be < out_end */
             if(fx_expect_false(op - !lit + 3 + 1 >= out_end))
                 return LZFX_ESIZE;
-            
+
             op [- lit - 1] = lit << 3;/* Terminate literal run */
             op -= !lit;               /* Undo run if length is zero */
 
@@ -227,7 +227,7 @@ int lzfx_decompress(const void* ibuf, unsigned int ilen,
     u8 const *const in_end = ip + ilen;
     u8 *op = (u8 *)obuf;
     u8 const *const out_end = (olen == NULL ? NULL : op + *olen);
-    
+
     unsigned int remain_len = 0;
     int rc;
 
@@ -311,7 +311,7 @@ int lzfx_getsize(const void* ibuf, unsigned int ilen, unsigned int *olen){
     u8 const *ip = (const u8 *)ibuf;
     u8 const *const in_end = ip + ilen;
     int tot_len = 0;
-    
+
     while (ip < in_end) {
 
         unsigned int ctrl = *ip++;
@@ -346,7 +346,3 @@ int lzfx_getsize(const void* ibuf, unsigned int ilen, unsigned int *olen){
 
     return 0;
 }
-
-
-
-
