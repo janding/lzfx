@@ -11,3 +11,5 @@ log.txt
 *.bak
 lzfxs-util
 gmon.out
+compile_commands.json
+log.txt
