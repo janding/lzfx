@@ -16,6 +16,14 @@ EXECUTABLE := lzfxs-util
 OBJECTS    := $(SOURCES:.c=.o)
 
 ###############################################################################
+# DUMA
+
+ifdef USE_DUMA
+  CFLAGS   += -DUSE_DUMA
+  DUMALIBS ?= -l:libduma.a
+endif # USE_DUMA
+
+###############################################################################
 # Defaults
 
 .PHONY: all
@@ -33,7 +41,7 @@ $(OBJECTS) lzfxs: $(EXECUTABLE)
 $(EXECUTABLE): $(SOURCES)
 	$(CC) $(CFLAGS) \
 		$(WARNFLAGS) \
-		$+ -o $@
+		$+ -o $@ $(DUMALIBS)
 
 ###############################################################################
 # Dependencies

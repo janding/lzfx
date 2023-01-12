@@ -35,6 +35,10 @@
 #include <fcntl.h>
 #include <string.h>
 
+#ifdef USE_DUMA
+# include <duma.h>
+#endif /* ifdef DUMA */
+
 #undef FREE
 #ifdef TESTING
 # define FREE(p) free(p)
@@ -273,7 +277,8 @@ fx_write_block(const FX_STATE state, const fx_kind_t kind_in,
 static int
 fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len)
 {
-  static u8 *    obuf;
+  static u8 *    tbuf = 0;
+  static u8 *    obuf = 0;
   static size_t  obuf_len;
   uint32_t       usize;
   unsigned int   usize_real;
@@ -292,11 +297,12 @@ fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len)
 
   if (usize > obuf_len)
     {
-      obuf = (u8 *)realloc(obuf, usize);
-      if (obuf == NULL)
+      tbuf = (u8 *)realloc(obuf, usize);
+      if (tbuf == NULL)
         {
-          return -1; /* This leaks but we quit right away */
+          return -1;
         }
+      obuf = tbuf;
 
       obuf_len = usize;
     }
@@ -342,8 +348,8 @@ mem_resize(u8 **buf, size_t *ilen, const size_t olen)
           return -1;
         }
 
-      *buf   = tbuf;
-      *ilen  = olen;
+      *buf  = tbuf;
+      *ilen = olen;
     }
 
   return 0;
@@ -424,15 +430,21 @@ fx_compress_block(const FX_STATE state, const u8 *ibuf, const uint32_t ilen)
 int
 fx_create(const FX_STATE state)
 {
-  unsigned long  blockno  = 0;
   ssize_t        rc       = 0;
+  unsigned long  blockno  = 0;
   size_t         count    = 0;
-  u8 *           ibuf     = (u8 *)malloc(BLOCKSIZE);
+  u8 *           ibuf     = 0;
+
+  ibuf = (u8 *)malloc(BLOCKSIZE);
+  if (ibuf == 0)
+    {
+      fprintf(stderr, "Out of memory.  Aborting!\n");
+      abort();
+    }
 
   do
     {
-      rc     = 0;
-      count  = 0;
+      count = 0;
       do
         {
           rc = read(state.ifd, ibuf, BLOCKSIZE - count);
@@ -521,7 +533,7 @@ fx_read(const FX_STATE state)
           if (rc == 0)
             {
               fprintf(stderr,
-                "EOF after block header (tried to read %d bytes)\n",
+                "EOF after block header (tried to read %u bytes)\n",
                 blocksize);
               return -1;
             }

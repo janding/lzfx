@@ -52,9 +52,9 @@ typedef unsigned char u8;
 typedef const u8 *LZSTATE[LZFXS_HSIZE];
 
 /* Define the hash function */
-#define LZFXS_FRST(p)      ((( p[0] ) << 8 ) | p[1] )
-#define LZFXS_NEXT(v, p)   ((( v )    << 8 ) | p[2] )
-#define LZFXS_IDX(h)       ((( h      >> ( 3 * 8 - LZFXS_HLOG )) - h ) \
+#define LZFXS_FRST(p)      (((  p[0] ) << 8 ) | p[1] )
+#define LZFXS_NEXT(v, p)   (((  v    ) << 8 ) | p[2] )
+#define LZFXS_IDX(h)       (((( h    ) >> ( 3 * 8 - LZFXS_HLOG )) - ( h ) ) \
                                & ( LZFXS_HSIZE - 1 ))
 
 /* These cannot be changed, as they are related to the compressed format. */
@@ -157,9 +157,9 @@ lzfxs_compress(const void *const ibuf, const unsigned int ilen, void *obuf,
           && ref[2] == ip[2])
         {
           unsigned int        len     = 3; /* We already know 3 bytes match */
-          const unsigned int  maxlen  = in_end - ip - 2 > LZFXS_MAX_REF
-                                          ? LZFXS_MAX_REF
-                                          : in_end - ip - 2;
+	  const unsigned int  modlen  = in_end - ip - 2;
+          const unsigned int  maxlen  = modlen > LZFXS_MAX_REF
+                                          ? LZFXS_MAX_REF : modlen;
 
           /*
            * lit == 0: op + 3 must be < out_end (because we undo the run)
@@ -291,7 +291,7 @@ lzfxs_decompress(const void *ibuf, unsigned int ilen, void *obuf,
 
   if (obuf == NULL)
     {
-      if (olen != 0)
+      if (*olen != 0)
         {
           return LZFXS_EARGS;
         }
