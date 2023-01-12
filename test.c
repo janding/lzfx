@@ -32,12 +32,12 @@ typedef int (*lzfxs_fn) (const void *ibuf, unsigned int ilen, void *obuf,
                         unsigned int *olen);
 
 int
-lzf_proxy_comp(const void *ibuf, unsigned int ilen, void *obuf,
+lzfxs_proxy_comp(const void *ibuf, unsigned int ilen, void *obuf,
                unsigned int *olen)
 {
   unsigned int rc;
 
-  rc = lzf_compress(ibuf, ilen, obuf, *olen);
+  rc = lzfxs_compress(ibuf, ilen, obuf, *olen);
   if (rc == 0)
     {
       return LZFX_ESIZE;
@@ -48,12 +48,12 @@ lzf_proxy_comp(const void *ibuf, unsigned int ilen, void *obuf,
 }
 
 int
-lzf_proxy_decomp(const void *ibuf, unsigned int ilen, void *obuf,
+lzfxs_proxy_decomp(const void *ibuf, unsigned int ilen, void *obuf,
                  unsigned int *olen)
 {
   unsigned int rc;
 
-  rc = lzf_decompress(ibuf, ilen, obuf, *olen);
+  rc = lzfxs_decompress(ibuf, ilen, obuf, *olen);
   if (rc == 0)
     {
       if (errno == EINVAL)
@@ -260,16 +260,16 @@ perform_tests(const void *ibuf, unsigned int ilen, const char *fname)
   }
 
   DO_TEST(
-    test_round(ibuf, ilen, lzf_proxy_comp, lzf_proxy_decomp),
-    "LZF round trip");
+    test_round(ibuf, ilen, lzfxs_proxy_comp, lzfxs_proxy_decomp),
+    "LZFXS round trip");
 
   DO_TEST(
     test_round(ibuf, ilen, lzfxs_compress, lzfxs_decompress),
-    "LZFX round trip");
+    "LZFXS round trip");
 
   DO_TEST(
     test_bounds(ibuf, ilen, lzfxs_compress, lzfxs_decompress),
-    "LZFX overrun check");
+    "LZFXS overrun check");
 
   fprintf(stdout, "\n");
 
