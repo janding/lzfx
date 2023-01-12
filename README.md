@@ -1,3 +1,8 @@
+<!--
+SPDX-License-Identifier: BSD-2-Clause
+Copyright (c) 2023 Jeffrey H. Johnson <trnsz@pobox.com>
+-->
+
 # LZFXS
 
 "**LZFXS**" is a simple compression algorithm, derived from "**Simplified LZFX**"

@@ -1,5 +1,7 @@
 /*
- * LZFXS
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * lzfxs-util.c  --  LZFXS compression / decompression utility
  *
  * Copyright (c) 2000-2008 Marc Alexander Lehmann <schmorp@schmorp.de>
  * Copyright (c) 2009 Andrew Collette <andrew.collette@gmail.com>
@@ -83,11 +85,11 @@ fx_init(FX_STATE *state, int ifd, int ofd, fx_mode_t mode)
 /*
  * Read len bytes from the input file.
  *
- * buf:    Output buffer
- * len:    # bytes to read
+ * buf:  Output buffer
+ * len:  # bytes to read
  *
- * >=0: bytes read, either 0 (EOF) or len
- *  <0: Read error
+ * >=0:  bytes read, either 0 (EOF) or len
+ *  <0:  Read error
  */
 
 static int
@@ -98,7 +100,7 @@ fx_read_bytes(const FX_STATE state, void *buf, const size_t len)
 
   do
     {
-      rc     = read(state.ifd, ((u8 *)buf ) + count, len - count);
+      rc      = read(state.ifd, ((u8 *)buf ) + count, len - count);
       count  += rc;
     }
   while (rc > 0 && count < len);
@@ -111,9 +113,7 @@ fx_read_bytes(const FX_STATE state, void *buf, const size_t len)
 
   if (count > 0 && count != len)
     {
-      fprintf(
-        stderr,
-        "Read truncated (%u bytes short)\n",
+      fprintf(stderr, "Read truncated (%u bytes short)\n",
         (unsigned int)( len - count ));
       return -1;
     }
@@ -124,11 +124,11 @@ fx_read_bytes(const FX_STATE state, void *buf, const size_t len)
 /*
  * Write len bytes from the buffer to the output file.
  *
- * buf:    Input buffer
- * len:    # of bytes in buf
+ * buf:  Input buffer
+ * len:  # of bytes in buf
  *
- * >=0:    Bytes written
- *  <0:    Write error
+ * >=0:  Bytes written
+ *  <0:  Write error
  */
 
 static int
@@ -156,10 +156,10 @@ fx_write_bytes(const FX_STATE state, const void *buf, const size_t len)
 /*
  * Skip len bytes in the input file.
  *
- *  len:    # of bytes to skip
+ *  len:  # of bytes to skip
  *
- *    0:    Success
- *   <0:    Read error
+ *    0:  Success
+ *   <0:  Read error
  */
 
 static int
@@ -180,12 +180,12 @@ fx_skip_bytes(const FX_STATE state, const size_t len)
 /*
  * Read a header from the input stream.
  *
- * kind_in:    Will contain the header kind
- * len_in:     Will contain the block length
+ * kind_in:  Will contain the header kind
+ * len_in:   Will contain the block length
  *
- * >0:     Read success (10)
- *  0:     EOF
- * <0:     Read error (message printed)
+ * >0:  Read success (10)
+ *  0:  EOF
+ * <0:  Read error (message printed)
  */
 
 static int
@@ -202,20 +202,19 @@ fx_read_header(const FX_STATE state, fx_kind_t *kind_in, uint32_t *len_in)
       return rc; /* 0 = EOF; <0 = already printed error */
     }
 
-  if (head[0] != 'L' || head[1] != 'Z' || head[2] != 'F' || head[3] != 'X')
+  if (head[0] != 'L' || head[1] != 'Z' || \
+      head[2] != 'F' || head[3] != 'X')
     {
-      fprintf(
-        stderr,
-        "Illegal header %X %X %X %X\n",
-        (int)head[0],
-        (int)head[1],
-        (int)head[2],
-        (int)head[3]);
+      fprintf(stderr, "Illegal header %X %X %X %X\n",
+        (int)head[0], (int)head[1],
+        (int)head[2], (int)head[3]);
       return -1;
     }
 
-  kind      = ( head[4] << 8 ) | head[5];
-  len       = ( head[6] << 24 ) | ( head[7] << 16 ) | ( head[8] << 8 ) | head[9];
+  kind      = ( head[4] <<  8 ) | head[5];
+  len       = ( head[6] << 24 ) | \
+              ( head[7] << 16 ) | \
+              ( head[8] <<  8 ) | head[9];
 
   *kind_in  = kind;
   *len_in   = len;
@@ -226,12 +225,12 @@ fx_read_header(const FX_STATE state, fx_kind_t *kind_in, uint32_t *len_in)
 /*
  * Write a block to output file, adding the header.
  *
- * kind_in:    Header kind
- * len:        Block length
- * data:       Block data
+ * kind_in: Header kind
+ * len:     Block length
+ * data:    Block data
  *
- *  0:     Write success
- * <0:     Write error (message printed)
+ *  0:  Write success
+ * <0:  Write error (message printed)
  */
 
 static int
@@ -239,15 +238,13 @@ fx_write_block(const FX_STATE state, const fx_kind_t kind_in,
                const uint32_t len, const void *data)
 {
   const uint16_t  kind    = kind_in;
-  u8              head[]  = {
-    'L', 'Z', 'F', 'X', 0, 0, 0, 0, 0, 0
-  };
+  u8              head[]  = { 'L', 'Z', 'F', 'X', 0, 0, 0, 0, 0, 0 };
 
-  head[4]  = kind >> 8;
+  head[4]  = kind >>  8;
   head[5]  = kind;
-  head[6]  = len >> 24;
-  head[7]  = len >> 16;
-  head[8]  = len >> 8;
+  head[6]  = len  >> 24;
+  head[7]  = len  >> 16;
+  head[8]  = len  >>  8;
   head[9]  = len;
 
   if (fx_write_bytes(state, head, 10) < 0)
@@ -266,8 +263,8 @@ fx_write_block(const FX_STATE state, const fx_kind_t kind_in,
 /*
  * Decompress a block (KIND_COMPRESSED) to the output file.
  *
- * ibuf:   The block (including 4-byte leader)
- * len:    Total block length
+ * ibuf:  The block (including 4-byte leader)
+ * len:   Total block length
  *
  *  0:  Success
  * <0:  Error (message printed)
@@ -278,7 +275,6 @@ fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len)
 {
   static u8 *    obuf;
   static size_t  obuf_len;
-
   uint32_t       usize;
   unsigned int   usize_real;
   int            rc;
@@ -289,7 +285,10 @@ fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len)
       return -2;
     }
 
-  usize = ( ibuf[0] << 24 ) | ( ibuf[1] << 16 ) | ( ibuf[2] << 8 ) | ibuf[3];
+  usize = ( ibuf[0] << 24 ) | \
+          ( ibuf[1] << 16 ) | \
+          ( ibuf[2] <<  8 ) | \
+            ibuf[3];
 
   if (usize > obuf_len)
     {
@@ -303,7 +302,6 @@ fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len)
     }
 
   usize_real  = usize;
-
   rc          = lzfxs_decompress(ibuf + 4, len - 4, obuf, &usize_real);
   if (rc < 0)
     {
@@ -313,11 +311,9 @@ fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len)
 
   if (usize_real != usize)
     {
-      fprintf(
-        stderr,
+      fprintf(stderr,
         "Decompressed data has wrong length (%d vs expected %d)\n",
-        (int)usize_real,
-        (int)usize);
+        (int)usize_real, (int)usize);
       return -2;
     }
 
@@ -340,8 +336,7 @@ mem_resize(u8 **buf, size_t *ilen, const size_t olen)
       tbuf = realloc(*buf, olen);
       if (tbuf == NULL)
         {
-          fprintf(
-            stderr,
+          fprintf(stderr,
             "Can't allocate memory (%lu bytes)\n",
             (unsigned long)olen);
           return -1;
@@ -357,11 +352,11 @@ mem_resize(u8 **buf, size_t *ilen, const size_t olen)
 /*
  * Compress a block of raw data and store it in the output file.
  *
- *  ibuf:   Raw data block to compress
- *  ilen:   Length of data block
+ *  ibuf:  Raw data block to compress
+ *  ilen:  Length of data block
  *
- *  0:  Success
- *  <0: Error (message printed)
+ *   0:  Success
+ *  <0:  Error (message printed)
  */
 
 static int
@@ -387,15 +382,14 @@ fx_compress_block(const FX_STATE state, const u8 *ibuf, const uint32_t ilen)
 
   /* 4-byte space to store the usize */
   compressed_len  = ilen - 4;
-
   rc              = lzfxs_compress(ibuf, ilen, obuf + 4, &compressed_len);
-  if (rc < 0 && rc != LZFX_ESIZE)
+  if (rc < 0 && rc != LZFXS_ESIZE)
     {
       fprintf(stderr, "Compression error (code %d)\n", rc);
       return -1;
     }
 
-  if (rc == LZFX_ESIZE || !compressed_len)
+  if (rc == LZFXS_ESIZE || !compressed_len)
     {
       rc = fx_write_block(state, KIND_UNCOMPRESSED, ilen, ibuf);
       if (rc < 0)
@@ -409,8 +403,8 @@ fx_compress_block(const FX_STATE state, const u8 *ibuf, const uint32_t ilen)
       obuf[1]  = ilen >> 16;
       obuf[2]  = ilen >> 8;
       obuf[3]  = ilen;
-
-      rc       = fx_write_block(state, KIND_COMPRESSED, compressed_len + 4, obuf);
+      rc       = fx_write_block(state, KIND_COMPRESSED,
+                   compressed_len + 4, obuf);
       if (rc < 0)
         {
           return -1;
@@ -423,8 +417,8 @@ fx_compress_block(const FX_STATE state, const u8 *ibuf, const uint32_t ilen)
 /*
  * Compress from input to output file.
  *
- * 0:  Success
- * <0: Failure (message printed)
+ *  0:  Success
+ * <0:  Failure (message printed)
  */
 
 int
@@ -469,18 +463,16 @@ fx_create(const FX_STATE state)
   return 0;
 
  failed:
-  fprintf(
-    stderr,
-    "Compression failed at byte %lu\n",
+  fprintf(stderr, "Compression failed at byte %lu\n",
     blockno * BLOCKSIZE + count);
   FREE(ibuf);
   return -1;
 }
 
 /*
- * Read an LZFX file
+ * Read an LZFXS file
  *
- * 0: success
+ *  0: success
  * <0: Failure (message printed)
  */
 
@@ -490,7 +482,6 @@ fx_read(const FX_STATE state)
   int            rc;
   fx_kind_t      kind       = 0;
   uint32_t       blocksize  = 0;
-
   static u8 *    ibuf;
   static size_t  ilen;
 
@@ -529,8 +520,7 @@ fx_read(const FX_STATE state)
 
           if (rc == 0)
             {
-              fprintf(
-                stderr,
+              fprintf(stderr,
                 "EOF after block header (tried to read %d bytes)\n",
                 blocksize);
               return -1;
@@ -590,23 +580,17 @@ main(int argc, char *argv[])
   fx_mode_t  mode;
   FX_STATE   state;
 
-  fprintf(
-    stderr,
-    "LZFXS compression utility 0.1\n\n"
-    "*********************************\n"
-    "  THIS IS A DEVELOPMENT RELEASE\n"
-    "  DO NOT USE ON CRITICAL DATA\n"
-    "*********************************\n\n");
+  fprintf(stderr, "LZFXS compression utility 0.1\n\n");
 
   if (argc != 4)
     {
-      fprintf(stderr, "Syntax is lzfxs <namein> <nameout> c|d\n");
+      fprintf(stderr, "Usage: lzfxs-util <namein> <nameout> <[c|d]>\n\n");
       return 1;
     }
 
-#ifdef __MINGW32__
+#if defined ( __MINGW32__ ) || defined ( __MINGW64__ )
     _fmode = _O_BINARY;
-#endif /* ifdef __MINGW32__ */
+#endif /* if defined ( __MINGW32__ ) || defined ( __MINGW64__ ) */
 
   ifd = open(argv[1], O_RDONLY);
   if (ifd < 0)

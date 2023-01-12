@@ -1,5 +1,7 @@
 /*
- * LZFXS
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * lzfxs.h  --  LZFXS compression / decompression header
  *
  * Copyright (c) 2000-2008 Marc Alexander Lehmann <schmorp@schmorp.de>
  * Copyright (c) 2009 Andrew Collette <andrew.collette@gmail.com>
@@ -27,8 +29,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LZFX_H
-# define LZFX_H
+#ifndef LZFXS_H
+# define LZFXS_H
 
 # ifdef __cplusplus
   extern "C"
@@ -43,19 +45,19 @@
  * guaranteed to be byte-for-byte identical.
  */
 
-# define LZFX_VERSION_MAJOR    0
-# define LZFX_VERSION_MINOR    1
-# define LZFX_VERSION_STRING   "0.1"
+# define LZFXS_VERSION_MAJOR    0
+# define LZFXS_VERSION_MINOR    1
+# define LZFXS_VERSION_STRING   "0.1"
 
-/* Hashtable size (2**LZFX_HLOG entries) */
-# ifndef LZFX_HLOG
-#  define LZFX_HLOG  16
-# endif /* ifndef LZFX_HLOG */
+/* Hash table size (2**LZFXS_HLOG entries) */
+# ifndef LZFXS_HLOG
+#  define LZFXS_HLOG  16
+# endif /* ifndef LZFXS_HLOG */
 
 /* Predefined errors. */
-# define LZFX_ESIZE      -1 /* Output buffer too small */
-# define LZFX_ECORRUPT   -2 /* Invalid data for decompression */
-# define LZFX_EARGS      -3 /* Arguments invalid (NULL) */
+# define LZFXS_ESIZE      -1  /* Output buffer too small        */
+# define LZFXS_ECORRUPT   -2  /* Invalid data for decompression */
+# define LZFXS_EARGS      -3  /* Arguments invalid (NULL)       */
 
 /*
  * Buffer-to buffer compression.
@@ -69,7 +71,7 @@
  */
 
 int lzfxs_compress(const void *ibuf, unsigned int ilen, void *obuf,
-                  unsigned int *olen);
+                   unsigned int *olen);
 
 /*
  * Buffer-to-buffer decompression.
@@ -81,7 +83,7 @@ int lzfxs_compress(const void *ibuf, unsigned int ilen, void *obuf,
  * olen contains the uncompressed size in bytes.  On failure, a negative
  * value is returned.
  *
- * If the failure code is LZFX_ESIZE, olen contains the minimum buffer size
+ * If the failure code is LZFXS_ESIZE, olen contains the minimum buffer size
  * required to hold the decompressed data.  Otherwise, olen is not modified.
  *
  * Supplying a zero *olen is a valid and supported strategy to determine the
@@ -91,10 +93,10 @@ int lzfxs_compress(const void *ibuf, unsigned int ilen, void *obuf,
  */
 
 int lzfxs_decompress(const void *ibuf, unsigned int ilen, void *obuf,
-                    unsigned int *olen);
+                     unsigned int *olen);
 
 # ifdef __cplusplus
   } /* extern "C" */
 # endif /* ifdef __cplusplus */
 
-#endif /* ifndef LZFX_H */
+#endif /* ifndef LZFXS_H */
