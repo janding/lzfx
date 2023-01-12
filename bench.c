@@ -3,11 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#if USE_LZF
-#include "lzf.h"
-#else
-#include "lzfx.h"
-#endif
+#include "lzfxs.h"
 
 typedef unsigned char u8;
 
@@ -42,19 +38,11 @@ int main(int argc, char* argv[]){
     obuf = (u8*)malloc(olen);
 
     for(i=0;i<NITER;i++){
-#if USE_LZF
-        rc = lzf_compress(data, count, obuf, olen);
-        if(rc==0){
-            fprintf(stderr, "fail\n");
-            return 1;
-        }
-#else
         rc = lzfx_compress(data, count, obuf, &olen);
         if(rc<0){
             fprintf(stderr, "fail\n");
             return -rc;
         }
-#endif
         olen = count*2;
     }
 

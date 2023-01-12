@@ -3,8 +3,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-#include "lzfx.h"
-#include "lzf.h"
+
+#include "lzfxs.h"
+
 #include <errno.h>
 
 const char* syntax = "Syntax is 'util in out c|d'\n";

@@ -31,7 +31,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "lzfx.h"
+#include "lzfxs.h"
 
 #define LZFX_HSIZE (1 << (LZFX_HLOG))
 

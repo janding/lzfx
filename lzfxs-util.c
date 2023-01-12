@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-#include "lzfx.h"
+
+#include "lzfxs.h"
+
 #include <errno.h>
 #include <stdint.h>
 
