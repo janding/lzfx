@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2009 Andrew Collette <andrew.collette at gmail.com>
- * http://lzfx.googlecode.com
+ * http://lzfxs.googlecode.com
  *
  * Implements an LZF-compatible compressor/decompressor based on the liblzf
  * codebase written by Marc Lehmann.  This code is released under the BSD
@@ -71,7 +71,7 @@
  * value is returned and olen is not modified.
  */
 
-int lzfx_compress(const void *ibuf, unsigned int ilen, void *obuf,
+int lzfxs_compress(const void *ibuf, unsigned int ilen, void *obuf,
                   unsigned int *olen);
 
 /*
@@ -93,7 +93,7 @@ int lzfx_compress(const void *ibuf, unsigned int ilen, void *obuf,
  * this case only.
  */
 
-int lzfx_decompress(const void *ibuf, unsigned int ilen, void *obuf,
+int lzfxs_decompress(const void *ibuf, unsigned int ilen, void *obuf,
                     unsigned int *olen);
 
 # ifdef __cplusplus

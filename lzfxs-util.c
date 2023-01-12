@@ -4,6 +4,17 @@
 #include <fcntl.h>
 #include <string.h>
 
+#undef FREE
+#ifdef TESTING
+# define FREE(p) free(p)
+#else
+# define FREE(p) do  \
+  {                  \
+    free((p));       \
+    (p) = NULL;      \
+  } while(0)
+#endif /* ifdef TESTING */
+
 #include "lzfxs.h"
 
 #include <errno.h>
@@ -264,7 +275,7 @@ fx_decompress_block(const FX_STATE state, const u8 *ibuf, const size_t len)
 
   usize_real  = usize;
 
-  rc          = lzfx_decompress(ibuf + 4, len - 4, obuf, &usize_real);
+  rc          = lzfxs_decompress(ibuf + 4, len - 4, obuf, &usize_real);
   if (rc < 0)
     {
       fprintf(stderr, "Decompression failed: code %d\n", rc);
@@ -348,7 +359,7 @@ fx_compress_block(const FX_STATE state, const u8 *ibuf, const uint32_t ilen)
   /* 4-byte space to store the usize */
   compressed_len  = ilen - 4;
 
-  rc              = lzfx_compress(ibuf, ilen, obuf + 4, &compressed_len);
+  rc              = lzfxs_compress(ibuf, ilen, obuf + 4, &compressed_len);
   if (rc < 0 && rc != LZFX_ESIZE)
     {
       fprintf(stderr, "Compression error (code %d)\n", rc);
@@ -425,7 +436,7 @@ fx_create(const FX_STATE state)
     }
   while (count == BLOCKSIZE);
 
-  free(ibuf);
+  FREE(ibuf);
   return 0;
 
  failed:
@@ -433,7 +444,7 @@ fx_create(const FX_STATE state)
     stderr,
     "Compression failed at byte %lu\n",
     blockno * BLOCKSIZE + count);
-  free(ibuf);
+  FREE(ibuf);
   return -1;
 }
 
@@ -560,7 +571,7 @@ main(int argc, char *argv[])
 
   if (argc != 4)
     {
-      fprintf(stderr, "Syntax is lzfx <namein> <nameout> c|d\n");
+      fprintf(stderr, "Syntax is lzfxs <namein> <nameout> c|d\n");
       return 1;
     }
 

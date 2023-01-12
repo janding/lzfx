@@ -4,6 +4,17 @@
 #include <fcntl.h>
 #include <string.h>
 
+#undef FREE
+#ifdef TESTING
+# define FREE(p) free(p)
+#else
+# define FREE(p) do  \
+  {                  \
+    free((p));       \
+    (p) = NULL;      \
+  } while(0)
+#endif /* ifdef TESTING */
+
 #include "lzfxs.h"
 
 #include <errno.h>
@@ -17,7 +28,7 @@ typedef enum
 } lzmode_t;
 
 typedef unsigned char u8;
-typedef int (*lzfx_fn) (const void *ibuf, unsigned int ilen, void *obuf,
+typedef int (*lzfxs_fn) (const void *ibuf, unsigned int ilen, void *obuf,
                         unsigned int *olen);
 
 int
@@ -76,8 +87,8 @@ lzf_proxy_decomp(const void *ibuf, unsigned int ilen, void *obuf,
  */
 
 int
-test_bounds(const void *ibuf, unsigned int ilen, lzfx_fn compressor,
-            lzfx_fn decompressor)
+test_bounds(const void *ibuf, unsigned int ilen, lzfxs_fn compressor,
+            lzfxs_fn decompressor)
 {
   unsigned int  real_length;
   u8 *          comparison_buffer;
@@ -167,17 +178,17 @@ test_bounds(const void *ibuf, unsigned int ilen, lzfx_fn compressor,
 
  out:
 
-  free(comparison_buffer);
-  free(plaintext_buffer);
-  free(compressed_buffer);
+  FREE(comparison_buffer);
+  FREE(plaintext_buffer);
+  FREE(compressed_buffer);
 
   return frc;
 }
 
 /* Test round-trip.  1 on failure, 0 on no failure. */
 int
-test_round(const void *ibuf, unsigned int ilen, lzfx_fn compressor,
-           lzfx_fn decompressor)
+test_round(const void *ibuf, unsigned int ilen, lzfxs_fn compressor,
+           lzfxs_fn decompressor)
 {
   u8 *          compressed_buffer  = NULL;
   unsigned int  compressed_length;
@@ -215,8 +226,8 @@ test_round(const void *ibuf, unsigned int ilen, lzfx_fn compressor,
 
  out:
 
-  free(compressed_buffer);
-  free(plaintext_buffer);
+  FREE(compressed_buffer);
+  FREE(plaintext_buffer);
 
   return frc;
 }
@@ -253,24 +264,12 @@ perform_tests(const void *ibuf, unsigned int ilen, const char *fname)
     "LZF round trip");
 
   DO_TEST(
-    test_round(ibuf, ilen, lzfx_compress, lzfx_decompress),
+    test_round(ibuf, ilen, lzfxs_compress, lzfxs_decompress),
     "LZFX round trip");
 
   DO_TEST(
-    test_round(ibuf, ilen, lzfx_compress, lzf_proxy_decomp),
-    "LZFX comp -> LZF decomp");
-
-  DO_TEST(
-    test_round(ibuf, ilen, lzf_proxy_comp, lzfx_decompress),
-    "LZF comp -> LZFX decomp");
-
-  DO_TEST(
-    test_bounds(ibuf, ilen, lzfx_compress, lzfx_decompress),
+    test_bounds(ibuf, ilen, lzfxs_compress, lzfxs_decompress),
     "LZFX overrun check");
-
-  DO_TEST(
-    test_bounds(ibuf, ilen, lzf_proxy_comp, lzf_proxy_decomp),
-    "LZF overrun check");
 
   fprintf(stdout, "\n");
 
@@ -310,7 +309,7 @@ main(int argc, char *argv[])
   for (argidx = 1; argidx < argc; argidx++)
     {
       amt_read  = 0;
-      free(ibuf);
+      FREE(ibuf);
       ibuf      = NULL;
       ilen      = 0;
       nblocks   = 0;

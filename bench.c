@@ -45,7 +45,7 @@ main(int argc, char *argv[])
 
   for (i = 0; i < NITER; i++)
     {
-      rc = lzfx_compress(data, count, obuf, &olen);
+      rc = lzfxs_compress(data, count, obuf, &olen);
       if (rc < 0)
         {
           fprintf(stderr, "fail\n");

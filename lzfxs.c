@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2009 Andrew Collette <andrew.collette at gmail.com>
- * http://lzfx.googlecode.com
+ * http://lzfxs.googlecode.com
  *
  * Implements an LZF-compatible compressor/decompressor based on the liblzf
  * codebase written by Marc Lehmann.  This code is released under the BSD
@@ -62,7 +62,7 @@ typedef const u8 *LZSTATE[LZFX_HSIZE];
 #define LZFX_MAX_OFF   ( 1 << 13 )
 #define LZFX_MAX_REF   (( 1 << 8 ) + ( 1 << 3 ) - 2 )
 
-static int lzfx_getsize(const void *ibuf, unsigned int ilen,
+static int lzfxs_getsize(const void *ibuf, unsigned int ilen,
                         unsigned int *olen);
 
 /*
@@ -85,7 +85,7 @@ static int lzfx_getsize(const void *ibuf, unsigned int ilen,
  */
 
 int
-lzfx_compress(const void *const ibuf, const unsigned int ilen, void *obuf,
+lzfxs_compress(const void *const ibuf, const unsigned int ilen, void *obuf,
               unsigned int *const olen)
 {
 
@@ -268,7 +268,7 @@ lzfx_compress(const void *const ibuf, const unsigned int ilen, void *obuf,
 
 /* Decompressor */
 int
-lzfx_decompress(const void *ibuf, unsigned int ilen, void *obuf,
+lzfxs_decompress(const void *ibuf, unsigned int ilen, void *obuf,
                 unsigned int *olen)
 {
   u8 const *       ip          = (const u8 *)ibuf;
@@ -302,7 +302,7 @@ lzfx_decompress(const void *ibuf, unsigned int ilen, void *obuf,
           return LZFX_EARGS;
         }
 
-      return lzfx_getsize(ibuf, ilen, olen);
+      return lzfxs_getsize(ibuf, ilen, olen);
     }
 
   do
@@ -387,7 +387,7 @@ lzfx_decompress(const void *ibuf, unsigned int ilen, void *obuf,
   return 0;
 
  guess:
-  rc = lzfx_getsize(ip, ilen - ( ip - (u8 *)ibuf ), &remain_len);
+  rc = lzfxs_getsize(ip, ilen - ( ip - (u8 *)ibuf ), &remain_len);
   if (rc >= 0)
     {
       *olen = remain_len + ( op - (u8 *)obuf );
@@ -398,7 +398,7 @@ lzfx_decompress(const void *ibuf, unsigned int ilen, void *obuf,
 
 /* Guess len. No parameters may be NULL; this is not checked. */
 static int
-lzfx_getsize(const void *ibuf, unsigned int ilen, unsigned int *olen)
+lzfxs_getsize(const void *ibuf, unsigned int ilen, unsigned int *olen)
 {
   u8 const *       ip       = (const u8 *)ibuf;
   u8 const *const  in_end   = ip + ilen;
