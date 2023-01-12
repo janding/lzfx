@@ -61,9 +61,9 @@ int lzf_proxy_decomp(const void* ibuf, unsigned int ilen,
 int test_bounds(const void* ibuf, unsigned int ilen,
                 lzfx_fn compressor, lzfx_fn decompressor){
 
-    unsigned int real_length; 
+    unsigned int real_length;
     u8* comparison_buffer;
-    
+
     u8* compressed_buffer;
     u8* plaintext_buffer;
 
@@ -74,7 +74,7 @@ int test_bounds(const void* ibuf, unsigned int ilen,
     int rc;
     int frc = 0;
 
-    real_length = ((int)(ilen*1.05) == ilen ? ilen+20 : (int)ilen*1.05) + GUARD_BYTES;    
+    real_length = ((int)(ilen*1.05) == ilen ? ilen+20 : (int)ilen*1.05) + GUARD_BYTES;
     comparison_buffer = (u8*)malloc(real_length);
     compressed_buffer = (u8*)malloc(real_length);
     plaintext_buffer = (u8*)malloc(real_length);
@@ -172,17 +172,17 @@ int test_round(const void* ibuf, unsigned int ilen,
         frc = 1;
         goto out;
     }
-    
+
     out:
 
     free(compressed_buffer);
     free(plaintext_buffer);
-    
+
     return frc;
 }
 
 /*  Perform test battery on input (plaintext) buffer.  Prints to stdout.
-    
+
     Return is # of failed tests.
 */
 int perform_tests(const void* ibuf, unsigned int ilen, const char* fname){
@@ -205,7 +205,7 @@ int perform_tests(const void* ibuf, unsigned int ilen, const char* fname){
 
     DO_TEST(test_round(ibuf, ilen, lzfx_compress, lzf_proxy_decomp), "LZFX comp -> LZF decomp");
     DO_TEST(test_round(ibuf, ilen, lzf_proxy_comp, lzfx_decompress), "LZF comp -> LZFX decomp");
- 
+
     DO_TEST(test_bounds(ibuf, ilen, lzfx_compress, lzfx_decompress),   "LZFX overrun check");
     DO_TEST(test_bounds(ibuf, ilen, lzf_proxy_comp, lzf_proxy_decomp), "LZF overrun check");
 
@@ -227,7 +227,7 @@ int main(int argc, char* argv[]){
     int fd;
     u8 *ibuf = NULL;
     unsigned int ilen = 0;
-    
+
     ssize_t rc;
     ssize_t amt_read = 0;
     int nblocks = 0;
@@ -265,7 +265,7 @@ int main(int argc, char* argv[]){
             }
             amt_read += rc;
         } while(rc > 0);
-        
+
         ilen = amt_read;
 
         close(fd);
@@ -281,10 +281,3 @@ int main(int argc, char* argv[]){
 
     return !!nfailed;
 }
-
-
-
-
-
-
-
