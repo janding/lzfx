@@ -7,3 +7,4 @@ log.txt
 *~
 *.bak
 lzfxs-util
+gmon.out
